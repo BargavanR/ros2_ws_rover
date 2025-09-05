@@ -7,10 +7,20 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(rclpy REQUIRED)
+find_package(std_msgs REQUIRED)
+# Install the Python executable into lib/<pkg> so ros2 can find it
+install(
+  PROGRAMS
+    scripts/zenorak_teleop.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
+# Install launch files (optional)
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
