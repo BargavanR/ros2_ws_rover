@@ -2,7 +2,7 @@
 # This script acts as a bridge between ROS 2 and an Arduino.
 # It subscribes to the 'zenorak_teleop_cmd' topic and forwards
 # the received string messages directly to the Arduino via serial.
-
+'''
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String  # ROS 2 standard String message
@@ -85,3 +85,64 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()  # Run the main function
+'''
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+from rclpy.qos import QoSProfile, ReliabilityPolicy
+import serial, threading
+
+
+class TeleopBridge(Node):
+    """
+    Bridge: Subscribes to teleop commands and forwards them to Arduino.
+    """
+
+    def __init__(self):
+        super().__init__('zenorak_serial')
+
+        # Serial setup
+        try:
+            self.arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=1)
+            self.get_logger().info("✅ Connected to Arduino on /dev/ttyACM0")
+        except Exception as e:
+            self.get_logger().error(f"❌ Failed to connect to Arduino: {e}")
+            self.arduino = None
+
+        # Best Effort QoS (low latency)
+        qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT)
+        self.sub = self.create_subscription(String, 'zenorak_teleop_cmd', self.callback, qos)
+
+    def callback(self, msg):
+        command = msg.data.strip()
+        self.get_logger().debug(f"Received: {command}")
+        if self.arduino:
+            self._send_serial(command)
+
+    def _send_serial(self, command):
+        """ Send command asynchronously to avoid blocking ROS callback. """
+        def _write():
+            try:
+                self.arduino.write((command + "\n").encode())
+            except Exception as e:
+                self.get_logger().error(f"Serial error: {e}")
+        threading.Thread(target=_write, daemon=True).start()
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = TeleopBridge()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if node.arduino:
+            node.arduino.close()
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
