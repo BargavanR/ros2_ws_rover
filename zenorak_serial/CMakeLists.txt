@@ -24,11 +24,6 @@ install(
   DESTINATION lib/${PROJECT_NAME} # ROS 2 expects Python nodes here
 )
 
-# --- Install Launch Files (Optional) ---
-install(
-  DIRECTORY launch  # If you have a folder with launch files
-  DESTINATION share/${PROJECT_NAME} # ROS 2 installs them here
-)
 
 # --- Testing and Linting (Optional) ---
 if(BUILD_TESTING)
