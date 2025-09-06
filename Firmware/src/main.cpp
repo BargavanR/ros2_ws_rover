@@ -10,31 +10,31 @@ CytronMD motor4(PWM_DIR, 9, 8);
 
 // ====== Motor Control Functions ======
 void forward(int speed) {
-  motor1.setSpeed(speed);
-  motor2.setSpeed(speed);
-  motor3.setSpeed(speed);
+  motor1.setSpeed(-speed);
+  motor2.setSpeed(-speed);
+  motor3.setSpeed(-speed);
   motor4.setSpeed(speed);
 }
 
 void backward(int speed) {
-  motor1.setSpeed(-speed);
-  motor2.setSpeed(-speed);
-  motor3.setSpeed(-speed);
+  motor1.setSpeed(speed);
+  motor2.setSpeed(speed);
+  motor3.setSpeed(speed);
   motor4.setSpeed(speed);
 }
 
 void left(int speed) {
-  motor1.setSpeed(-speed);
-  motor2.setSpeed(speed);
-  motor3.setSpeed(speed);
+  motor1.setSpeed(0);
+  motor2.setSpeed(0);
+  motor3.setSpeed(-speed);
   motor4.setSpeed(-speed);
 }
 
 void right(int speed) {
-  motor1.setSpeed(speed);
+  motor1.setSpeed(-speed);
   motor2.setSpeed(-speed);
-  motor3.setSpeed(-speed);
-  motor4.setSpeed(speed);
+  motor3.setSpeed(0);
+  motor4.setSpeed(0);
 }
 
 void spinLeft(int speed) {

@@ -36,7 +36,7 @@ class TeleopWASD(Node):
         self.keymap = {'w': 'f', 'a': 'l', 's': 'b', 'd': 'r'}
 
         self.active_key = None  # Currently pressed key (None if no key)
-        self.count = 20          # Counter for incremental message (0..50)
+        self.count = 60          # Counter for incremental message (0..50)
         self.lock = threading.Lock()  # Lock to safely handle shared variables
 
         # Start a separate thread to read keyboard input continuously
