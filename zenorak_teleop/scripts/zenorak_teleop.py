@@ -33,7 +33,7 @@ class TeleopWASD(Node):
         qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT)
 
         # Publisher to send String messages on the topic 'zenorak_teleop_cmd'
-        self.pub = self.create_publisher(String, 'zenorak_teleop_cmd', qos)
+        self.pub = self.create_publisher(String, 'zenorak_teleop_cmd', 10)
 
         # Dictionary to map keyboard keys to command prefixes
         self.keymap = {'w': 'f', 'a': 'l', 's': 'b', 'd': 'r'}
