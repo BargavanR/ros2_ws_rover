@@ -2,11 +2,13 @@
 # This script allows controlling a robot using keyboard keys (W, A, S, D + Enter)
 # It publishes commands to a ROS 2 topic at 10Hz while a key is pressed.
 # Once count reaches 50, it stops incrementing unless a new key is pressed.
-'''
+
 import sys, termios, tty, threading
 import rclpy  # ROS 2 Python client library
 from rclpy.node import Node  # Base class to create a ROS 2 node
 from std_msgs.msg import String  # Standard ROS message type for sending strings
+from rclpy.qos import QoSProfile, ReliabilityPolicy
+import threading
 
 
 class TeleopWASD(Node):
@@ -28,9 +30,10 @@ class TeleopWASD(Node):
     def __init__(self):
         # Initialize the ROS 2 node with a name 'zenorak_teleop'
         super().__init__('zenorak_teleop')
+        qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT)
 
         # Publisher to send String messages on the topic 'zenorak_teleop_cmd'
-        self.pub = self.create_publisher(String, 'zenorak_teleop_cmd', 10)
+        self.pub = self.create_publisher(String, 'zenorak_teleop_cmd', qos)
 
         # Dictionary to map keyboard keys to command prefixes
         self.keymap = {'w': 'f', 'a': 'l', 's': 'b', 'd': 'r'}
@@ -45,7 +48,7 @@ class TeleopWASD(Node):
         self.kthread.start()
 
         # Timer callback: calls self._tick() every 0.1 seconds (10Hz)
-        self.timer = self.create_timer(0.1, self._tick)
+        self.timer = self.create_timer(0.01, self._tick)
 
     def _read_keys(self):
         """
@@ -111,93 +114,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()  # Run the main function
-'''
-
-import sys, termios, tty, threading
-import rclpy
-from rclpy.node import Node
-from std_msgs.msg import String
-from rclpy.qos import QoSProfile, ReliabilityPolicy
-
-
-class TeleopWASD(Node):
-    """
-    Keyboard teleop for robot:
-      w -> forward (f)
-      a -> left    (l)
-      s -> back    (b)
-      d -> right   (r)
-      Enter -> stop (s0)
-
-    Publishes commands at 50Hz while a key is active.
-    """
-
-    def __init__(self):
-        super().__init__('zenorak_teleop')
-
-        qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT)
-        self.pub = self.create_publisher(String, 'zenorak_teleop_cmd', qos)
-
-        self.keymap = {'w': 'f', 'a': 'l', 's': 'b', 'd': 'r'}
-        self.active_key = None
-        self.count = 0
-        self.lock = threading.Lock()
-
-        # Thread for reading keyboard
-        self._run = True
-        self.kthread = threading.Thread(target=self._read_keys, daemon=True)
-        self.kthread.start()
-
-        # Faster timer (50 Hz)
-        self.timer = self.create_timer(0.02, self._tick)
-
-    def _read_keys(self):
-        fd = sys.stdin.fileno()
-        old = termios.tcgetattr(fd)
-        tty.setcbreak(fd)
-        try:
-            while self._run:
-                c = sys.stdin.read(1)
-                with self.lock:
-                    if c == '\n':  # Enter -> stop
-                        self.active_key = None
-                        self.count = 0
-                        msg = String()
-                        msg.data = 's0'
-                        self.pub.publish(msg)
-                        self.get_logger().info(f'Sent: {msg.data}')
-                    elif c in self.keymap:  # Valid key
-                        self.active_key = c
-                        self.count = 0
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old)
-
-    def _tick(self):
-        with self.lock:
-            if self.active_key and self.active_key in self.keymap and self.count <= 80:
-                msg = String()
-                msg.data = f"{self.keymap[self.active_key]}{self.count}"
-                self.pub.publish(msg)
-                # Debug-level logging (won’t spam console)
-                self.get_logger().debug(f"Sent: {msg.data}")
-                self.count += 1
-
-    def destroy_node(self):
-        self._run = False
-        super().destroy_node()
-
-
-def main(args=None):
-    rclpy.init(args=args)
-    node = TeleopWASD()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
